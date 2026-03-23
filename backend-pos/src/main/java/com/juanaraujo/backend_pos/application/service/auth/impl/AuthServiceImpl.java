@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.juanaraujo.backend_pos.application.service.auth.AuthService;
+import com.juanaraujo.backend_pos.domain.exception.BusinessException;
 import com.juanaraujo.backend_pos.domain.model.user.User;
 import com.juanaraujo.backend_pos.domain.repository.user.UserRepository;
 import com.juanaraujo.backend_pos.infraestructure.persistence.dto.auth.LoginRequest;
@@ -25,10 +26,10 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponseDTO login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado", 404));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Contraseña incorrecta");
+            throw new BusinessException("Contraseña incorrecta", 401);
         }
 
         String token = jwtService.generateToken(user.getUsername(), user.getRole());
