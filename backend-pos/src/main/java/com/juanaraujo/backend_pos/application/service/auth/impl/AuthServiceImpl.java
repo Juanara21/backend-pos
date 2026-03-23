@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import com.juanaraujo.backend_pos.application.service.auth.AuthService;
 import com.juanaraujo.backend_pos.domain.model.user.User;
 import com.juanaraujo.backend_pos.domain.repository.user.UserRepository;
+import com.juanaraujo.backend_pos.infraestructure.persistence.dto.auth.LoginRequest;
 import com.juanaraujo.backend_pos.infraestructure.persistence.dto.auth.LoginResponseDTO;
+import com.juanaraujo.backend_pos.infraestructure.persistence.dto.auth.RegisterRequestDTO;
 import com.juanaraujo.backend_pos.infraestructure.security.JwtService;
 
 @Service
@@ -20,12 +22,12 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public LoginResponseDTO login(String username, String password) {
+    public LoginResponseDTO login(LoginRequest request) {
 
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
@@ -42,5 +44,35 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+    @Override
+    public LoginResponseDTO register(RegisterRequestDTO request) {
+
+        // 🔒 Validar si ya existe
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("El usuario ya existe");
+        }
+
+        // 🔐 Encriptar contraseña
+        String encryptedPassword = passwordEncoder.encode(request.getPassword());
+
+        // 👤 Crear usuario con rol fijo
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(encryptedPassword)
+                .role("USER") // 🔥 SIEMPRE desde backend
+                .build();
+
+        userRepository.save(user);
+
+        // 🔑 Generar token
+        String token = jwtService.generateToken(user.getUsername(), user.getRole());
+
+        // 🎯 Construir response desde el token (como definiste antes)
+        return LoginResponseDTO.builder()
+                .username(jwtService.extractUsername(token))
+                .role(jwtService.extractRole(token))
+                .token(token)
+                .build();
+    }
 
 }
