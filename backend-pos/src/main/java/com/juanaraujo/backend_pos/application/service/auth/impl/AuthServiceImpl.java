@@ -50,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 🔒 Validar si ya existe
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("El usuario ya existe");
+            throw new BusinessException("El usuario ya existe", 409);
         }
 
         // 🔐 Encriptar contraseña

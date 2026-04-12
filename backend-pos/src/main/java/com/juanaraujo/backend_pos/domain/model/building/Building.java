@@ -29,5 +29,7 @@ public class Building {
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
+    private Integer cantApartamentos;
+
 }
 
